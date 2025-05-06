@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-d6x-g&=el=a@qh54b7gyhw8i)guap*jg&m!tzwi5is-^87ju%-
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 # CSRF_TRUSTED_ORIGINS = ["https://*.ngrok-free.app"]
+CSRF_TRUSTED_ORIGINS = ['https://btlw.onrender.com']
 
 
 
