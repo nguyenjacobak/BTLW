@@ -1,0 +1,658 @@
+<div class="assistant-container">
+    <div class="assistant-character" onclick="toggleChatbot()">
+        <div class="head">
+            <div class="face">
+                <div class="eyes">
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                </div>
+                <div class="mouth"></div>
+            </div>
+            <div class="hair"></div>
+        </div>
+        <div class="body">
+            <div class="torso"></div>
+            <div class="arm left"></div>
+            <div class="arm right"></div>
+        </div>
+    </div>
+    
+    <div class="speech-bubble" id="greeting-bubble">
+        <p>Xin chào, tôi có thể giúp gì cho bạn?</p>
+    </div>
+</div>
+
+<div id="chatbot-container" class="chatbot-container">
+    <div class="chat-header">
+        <h5>Trợ lý học tập</h5>
+        <button onclick="clearChatHistory()">Xóa</button>
+        <button class="close-btn" onclick="toggleChatbot()">✕</button>
+    </div>
+    <div class="chat-body">
+        <div id="chatHistory" class="chat-history"></div>
+        <div id="typingIndicator" class="typing-indicator" style="display: none;">Bot đang nhập...</div>
+        <div class="form-group chat-input-container">
+            <input type="text" class="form-control chat-input" id="userInput" placeholder="Nhập câu hỏi của bạn..." onkeypress="if(event.keyCode === 13) sendMessage()">
+            <button class="btn btn-send" id="sendButton" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Nhân vật trợ lý */
+    .assistant-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 100px;
+        height: 140px;
+        z-index: 1000;
+        cursor: pointer;
+    }
+    
+    .assistant-character {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-origin: bottom center;
+        animation: bounce 3s ease-in-out infinite;
+    }
+    
+    /* Đầu nhân vật */
+    .head {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: #FFD3B5;
+        border-radius: 50%;
+        top: 0;
+        left: 20px;
+        overflow: hidden;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        animation: headTilt 8s ease-in-out infinite;
+    }
+    
+    .face {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .eyes {
+        position: absolute;
+        top: 25px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .eye {
+        width: 8px;
+        height: 12px;
+        background: #333;
+        border-radius: 50%;
+        margin: 0 8px;
+        animation: blink 4s ease-in-out infinite;
+    }
+    
+    .mouth {
+        position: absolute;
+        width: 20px;
+        height: 10px;
+        background: #FF6B6B;
+        border-radius: 0 0 10px 10px;
+        bottom: 8px; /* Thay đổi từ 15px xuống 13px */
+        left: 20px;
+        animation: smile 8s ease-in-out infinite;
+    }
+    
+    .hair {
+        position: absolute;
+        top: -5px;
+        left: 0;
+        width: 100%;
+        height: 20px;
+        background: #663300;
+        border-radius: 50% 50% 0 0;
+    }
+    
+    /* Thân nhân vật */
+    .body {
+        position: absolute;
+        width: 100%;
+        top: 60px;
+    }
+    
+    .torso {
+        width: 50px;
+        height: 60px;
+        background: #3a7bd5;
+        border-radius: 15px 15px 0 0;
+        left: 25px;
+        position: absolute;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .arm {
+        width: 15px;
+        height: 50px;
+        background: #3a7bd5;
+        position: absolute;
+        top: 5px;
+        border-radius: 8px;
+    }
+    
+    .arm.left {
+        left: 10px;
+        transform-origin: top center;
+        animation: waveLeft 5s ease-in-out infinite;
+    }
+    
+    .arm.right {
+        right: 10px;
+        transform-origin: top center;
+        animation: waveRight 6s ease-in-out infinite;
+    }
+    
+    /* Speech bubble - vị trí bên trái */
+    .speech-bubble {
+        position: absolute;
+        width: 180px;
+        background: white;
+        border-radius: 15px;
+        padding: 10px;
+        top: 0; /* Giữ nguyên vị trí ngang với đầu */
+        left: -200px; /* Di chuyển sang bên trái */
+        bottom: auto;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        transform: translateY(20px);
+        animation: showMessage 10s ease-in-out infinite;
+    }
+    
+    /* Điều chỉnh mũi tên sang phải */
+    .speech-bubble::after {
+        content: '';
+        position: absolute;
+        right: -10px; /* Mũi tên ở bên phải */
+        top: 20px; /* Giữ nguyên vị trí ở giữa về chiều cao */
+        border-width: 10px 0 10px 10px; /* Đổi hướng mũi tên sang phải */
+        border-style: solid;
+        border-color: transparent transparent transparent white; /* Đổi màu biên */
+    }
+    
+    .speech-bubble p {
+        margin: 0;
+        font-size: 14px;
+        color: #333;
+    }
+    
+    /* Chatbot container */
+    .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 130px;
+        width: 350px;
+        height: 450px;
+        background-color: #fff;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+        display: none;
+        flex-direction: column;
+        z-index: 1000;
+        overflow: hidden;
+        animation: slideIn 0.3s ease-in-out;
+    }
+    
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #3a7bd5, #2a6ac5);
+        color: #fff;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .chat-header h5 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .chat-header button {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        border-radius: 5px;
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .chat-header button:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .close-btn {
+        margin-left: 5px;
+        border-radius: 50% !important;
+        width: 25px;
+        height: 25px;
+        padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .chat-body {
+        padding: 15px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f8f9fa;
+    }
+    
+    .chat-history {
+        flex-grow: 1;
+        overflow-y: auto; /* Đảm bảo thuộc tính này đúng */
+        max-height: 300px; /* Thêm giới hạn chiều cao */
+        margin-bottom: 15px;
+        padding: 10px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column; /* Đảm bảo tin nhắn xếp theo chiều dọc */
+    }
+    
+    .chat-message {
+        margin-bottom: 12px;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 80%;
+        position: relative;
+        line-height: 1.4;
+    }
+    
+    .chat-message.user {
+        background-color: #e3f2fd;
+        align-self: flex-end;
+        margin-left: auto;
+        border-bottom-right-radius: 0;
+    }
+    
+    .chat-message.bot {
+        background-color: #f1f1f1;
+        align-self: flex-start;
+        margin-right: auto;
+        border-bottom-left-radius: 0;
+    }
+    
+    .typing-indicator {
+        font-style: italic;
+        color: #888;
+        padding: 5px 10px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    
+    .chat-input-container {
+        display: flex;
+        align-items: center;
+        background: white;
+        border-radius: 25px;
+        padding: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .chat-input {
+        border: none;
+        border-radius: 20px;
+        padding: 12px 15px;
+        flex-grow: 1;
+        background: transparent;
+    }
+    
+    .chat-input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    
+    .btn-send {
+        background: linear-gradient(135deg, #3a7bd5, #2a6ac5);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        margin-left: 8px;
+        color: white;
+        box-shadow: 0 3px 8px rgba(58, 123, 213, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-send:hover {
+        transform: scale(1.05);
+        background: linear-gradient(135deg, #2a6ac5, #1a5ab5);
+    }
+    
+    /* Animations */
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    @keyframes headTilt {
+        0%, 100% { transform: rotate(0); }
+        25% { transform: rotate(5deg); }
+        75% { transform: rotate(-5deg); }
+    }
+    
+    @keyframes blink {
+        0%, 90%, 100% { height: 12px; }
+        95% { height: 1px; }
+    }
+    
+    @keyframes smile {
+        0%, 100% { height: 10px; border-radius: 0 0 10px 10px; }
+        30%, 70% { height: 15px; border-radius: 0 0 15px 15px; }
+    }
+    
+    @keyframes waveLeft {
+        0%, 100% { transform: rotate(0); }
+        50% { transform: rotate(20deg); }
+    }
+    
+    @keyframes waveRight {
+        0%, 100% { transform: rotate(0); }
+        50% { transform: rotate(-20deg); }
+    }
+    
+    @keyframes showMessage {
+        0%, 70%, 100% { opacity: 0; transform: translateY(20px); }
+        10%, 60% { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    /* Chỉnh style cho tin nhắn hiện có */
+    .chat-message strong {
+        font-weight: 600;
+        color: #444;
+        margin-right: 5px;
+    }
+    
+    /* Thêm style cho scrollbar để dễ nhận biết hơn */
+    .chat-history::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-history::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .chat-history::-webkit-scrollbar-thumb {
+        background: #c1d1eb;
+        border-radius: 10px;
+    }
+
+    .chat-history::-webkit-scrollbar-thumb:hover {
+        background: #3a7bd5;
+    }
+    
+    /* Responsive */
+    @media (max-width: 576px) {
+        .chatbot-container {
+            width: calc(100% - 150px);
+            right: 120px;
+        }
+        
+        .speech-bubble {
+            width: 150px;
+            right: 10px;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script>
+    // Biến toàn cục để lưu tin nhắn gần nhất
+    let lastUserMessage = '';
+    let isRetrying = false;
+    const MAX_RETRIES = 3;
+    
+    // Array để lưu trữ lịch sử chat trong phiên hiện tại
+    let chatLogs = [];
+    
+    // API key cho OpenRouter
+    const OPENROUTER_API_KEY = "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";
+    const MODEL_ID = "google/gemini-2.0-flash-thinking-exp-1219:free";
+
+    function toggleChatbot() {
+        const chatbotContainer = document.getElementById('chatbot-container');
+        const assistantContainer = document.querySelector('.assistant-container');
+        const greetingBubble = document.getElementById('greeting-bubble');
+        
+        if (chatbotContainer.style.display === 'none' || chatbotContainer.style.display === '') {
+            chatbotContainer.style.display = 'flex';
+            greetingBubble.style.animation = 'none';
+            document.getElementById('userInput').focus();
+        } else {
+            chatbotContainer.style.display = 'none';
+            greetingBubble.style.animation = 'showMessage 10s ease-in-out infinite';
+        }
+    }
+
+    async function sendMessage(retry = false, retryMessage = '') {
+        const input = retry ? retryMessage : document.getElementById('userInput').value.trim();
+        const chatHistory = document.getElementById('chatHistory');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const sendButton = document.getElementById('sendButton');
+        const userInput = document.getElementById('userInput');
+
+        if (!input) {
+            return;
+        }
+
+        if (!retry) {
+            addMessageToHistory('user', input);
+            lastUserMessage = input; // Lưu tin nhắn gần nhất để có thể thử lại sau này
+            userInput.value = ''; // Xóa nội dung trong ô nhập sau khi gửi tin nhắn
+        }
+        
+        userInput.disabled = true; // Vô hiệu hóa ô nhập
+        sendButton.disabled = true; // Vô hiệu hóa nút gửi
+        typingIndicator.style.display = 'block'; // Hiển thị dấu hiệu "đang nhập"
+
+        try {
+            // Chuẩn bị tin nhắn cho OpenRouter API (định dạng OpenAI)
+            const systemMessage = {
+                role: "system",
+                content: 'Bạn là trợ lý AI giải thích các câu hỏi liên quan đến website. Nếu người dùng hỏi các câu hỏi về chủ đề khác thì hiển thị thông báo "Xin lỗi, tôi được huấn luyện để trả lời các câu hỏi liên quan đến lập trình web". Sử dụng tone giọng gần gũi, vui vẻ. Nếu người dùng yêu cầu giải thích code thì hãy giải thích lần lượt từng dòng, sau khi xong thì giải thích ngắn gọn ý nghĩa đoạn code. Nếu người dùng yêu cầu sinh code thì sinh toàn bộ nội dung đoạn code rồi giải thích ngắn gọn 1-2 dòng cho ý nghĩa dòng code.'
+            };
+            
+            // Chuẩn bị messages cho API
+            const messages = [
+                systemMessage,
+                { role: "user", content: input }
+            ];
+            
+            console.log("Sending request to OpenRouter API with model:", MODEL_ID);
+            
+            // Gọi OpenRouter API sử dụng định dạng tương thích với OpenAI
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': window.location.origin || 'https://ptit.edu.vn',
+                    'X-Title': 'PTIT Learning Assistant'
+                },
+                body: JSON.stringify({
+                    model: MODEL_ID,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 1500,
+                    stream: false
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('API Error Response:', errorData);
+                throw new Error(`API error: ${response.status} - ${JSON.stringify(errorData)}`);
+            }
+            
+            const data = await response.json();
+            console.log("API Response:", data);
+            
+            // Kiểm tra dữ liệu phản hồi và trích xuất nội dung
+            if (data && data.choices && data.choices.length > 0 && data.choices[0].message) {
+                const botResponse = data.choices[0].message.content;
+                addMessageToHistory('bot', botResponse);
+            } else {
+                throw new Error('Không thể trích xuất nội dung phản hồi từ API');
+            }
+            
+            // Reset trạng thái thử lại
+            isRetrying = false;
+            
+        } catch (error) {
+            console.error('Error:', error);
+            
+            // Xử lý các loại lỗi khác nhau
+            let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.';
+            
+            if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+                errorMessage = 'Yêu cầu mất quá nhiều thời gian để xử lý. Vui lòng thử lại hoặc chia nhỏ câu hỏi của bạn.';
+            } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+                errorMessage = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.';
+            } else if (error.message.includes('API error')) {
+                errorMessage = 'Máy chủ AI gặp sự cố. Vui lòng thử lại sau giây lát. Lỗi: ' + error.message;
+            } else if (error.message.includes('trích xuất')) {
+                errorMessage = 'Không nhận được phản hồi hợp lệ từ AI. Vui lòng thử lại.';
+            }
+            
+            // Thêm nút thử lại nếu không phải đang trong quá trình retry
+            if (!isRetrying) {
+                errorMessage += ' <button onclick="retryLastMessage()" class="retry-btn" style="background: #3a7bd5; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; margin-top: 5px;">Thử lại</button>';
+            }
+            
+            addMessageToHistory('bot', errorMessage);
+        } finally {
+            typingIndicator.style.display = 'none'; // Ẩn dấu hiệu "đang nhập"
+            userInput.disabled = false; // Kích hoạt lại ô nhập
+            sendButton.disabled = false; // Kích hoạt lại nút gửi
+        }
+    }
+    
+    // Hàm thử lại tin nhắn cuối cùng
+    function retryLastMessage() {
+        if (lastUserMessage) {
+            isRetrying = true;
+            // Xóa tin nhắn lỗi cuối cùng
+            const chatHistory = document.getElementById('chatHistory');
+            const lastErrorMsg = chatHistory.querySelector('.chat-message.bot:last-child');
+            if (lastErrorMsg) {
+                chatHistory.removeChild(lastErrorMsg);
+            }
+            
+            sendMessage(true, lastUserMessage);
+        }
+    }
+
+    // Thêm tin nhắn vào lịch sử chat
+    function addMessageToHistory(role, message) {
+        const chatHistory = document.getElementById('chatHistory');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${role}`;
+        
+        if (role === 'user') {
+            messageDiv.innerHTML = `<strong>Bạn:</strong> ${message}`;
+        } else {
+            try {
+                // Sử dụng marked để render markdown từ bot
+                messageDiv.innerHTML = `<strong>Trợ lý:</strong> ${marked.parse(message)}`;
+            } catch (e) {
+                console.error('Markdown parsing error:', e);
+                messageDiv.innerHTML = `<strong>Trợ lý:</strong> ${message}`;
+            }
+        }
+        
+        chatHistory.appendChild(messageDiv);
+        
+        // Đảm bảo cuộn xuống hoàn toàn
+        setTimeout(() => {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }, 50);
+    }
+
+    // Xóa lịch sử chat (chỉ trong phiên hiện tại)
+    function clearChatHistory() {
+        // Xóa giao diện hiển thị
+        document.getElementById('chatHistory').innerHTML = '';
+        
+        // Xóa dữ liệu trong bộ nhớ
+        chatLogs = [];
+        lastUserMessage = '';
+        isRetrying = false;
+        
+        console.log("Chat history cleared for current session");
+        
+        // Thông báo cho người dùng
+        addMessageToHistory('bot', 'Lịch sử trò chuyện đã được xóa. Bạn có thể bắt đầu cuộc trò chuyện mới.');
+    }
+    
+    // Thêm một tin nhắn chào mừng khi lần đầu mở chatbot
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            addMessageToHistory('bot', 'Xin chào! Tôi là trợ lý AI của PTIT, sử dụng model ' + MODEL_ID + '. Tôi có thể giúp bạn trả lời các câu hỏi về lập trình, công nghệ và nhiều chủ đề khác. Hãy hỏi tôi bất cứ điều gì bạn muốn biết!');
+        }, 500);
+    });
+    
+    // Kiểm tra kết nối mạng
+    window.addEventListener('online', function() {
+        const chatHistory = document.getElementById('chatHistory');
+        const lastMessage = chatHistory.querySelector('.chat-message.bot:last-child');
+        
+        if (lastMessage && (lastMessage.textContent.includes('kết nối') || lastMessage.textContent.includes('mạng'))) {
+            addMessageToHistory('bot', 'Kết nối mạng đã được khôi phục. <button onclick="retryLastMessage()" class="retry-btn" style="background: #3a7bd5; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; margin-top: 5px;">Thử lại câu hỏi gần nhất</button>');
+        }
+    });
+    
+    window.addEventListener('offline', function() {
+        addMessageToHistory('bot', 'Bạn đang ngoại tuyến. Vui lòng kiểm tra kết nối mạng của bạn.');
+    });
+    
+    // Hiển thị speech bubble định kỳ nếu chatbot chưa được mở
+    setInterval(function() {
+        const chatbotContainer = document.getElementById('chatbot-container');
+        if (chatbotContainer.style.display !== 'flex') {
+            const greetingBubble = document.getElementById('greeting-bubble');
+            greetingBubble.style.animation = 'none';
+            setTimeout(() => {
+                greetingBubble.style.animation = 'showMessage 10s ease-in-out infinite';
+            }, 10);
+        }
+    }, 30000);
+</script>
